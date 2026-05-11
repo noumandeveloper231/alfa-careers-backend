@@ -30,7 +30,8 @@ const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:4173",
-    "https://afla-careers-frontend.onrender.com"
+    "https://afla-careers-frontend.onrender.com",
+    "http://85.208.48.114"
 ];
 
 const __filename = fileURLToPath(import.meta.url);
@@ -53,9 +54,6 @@ app.use(
 
 const PORT = process.env.PORT || 5000;
 
-// Lightweight ping route
-// app.get('/ping', (req, res) => res.sendStatus(200));
-
 app.get('/', (req, res) => {
     res.send("I am Working");
 });
@@ -63,18 +61,6 @@ app.get('/', (req, res) => {
 connectDB();
 startJobsCron();
 startStatusCron();
-
-// Ping backend every 5 minutes to prevent cold start
-// const SELF_URL = process.env.SELF_URL || 'http://localhost:5000/ping';
-
-// cron.schedule('*/5 * * * *', async () => {
-//     try {
-//         await axios.get(SELF_URL);
-//         console.log('Pinged self at', new Date().toLocaleTimeString());
-//     } catch (err) {
-//         console.log('Error pinging self:', err.message);
-//     }
-// });
 
 // Express
 app.get('/download', async (req, res) => {
