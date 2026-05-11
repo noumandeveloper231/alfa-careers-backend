@@ -1,0 +1,43 @@
+{
+  "name": "indeed-clone",
+  "version": "1.0.0",
+  "description": "This is a Clone",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "clone",
+    "indeed",
+    "pakistan",
+    "indeed",
+    "clone"
+  ],
+  "author": "Nouman.DEV",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^1.41.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "cron": "^4.3.3",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.5.1",
+    "fs": "^0.0.1-security",
+    "geoip-lite": "^1.4.10",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.0",
+    "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.6",
+    "nodemon": "^3.1.10",
+    "path": "^0.12.7",
+    "sib-api-v3-sdk": "^8.5.0",
+    "slugify": "^1.6.6"
+  }
+}
