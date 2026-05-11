@@ -54,10 +54,10 @@ app.use(
 const PORT = process.env.PORT || 5000;
 
 // Lightweight ping route
-app.get('/ping', (req, res) => res.sendStatus(200));
+// app.get('/ping', (req, res) => res.sendStatus(200));
 
 app.get('/', (req, res) => {
-    res.send("I am Working Bitch!");
+    res.send("I am Working");
 });
 
 connectDB();
@@ -65,16 +65,16 @@ startJobsCron();
 startStatusCron();
 
 // Ping backend every 5 minutes to prevent cold start
-const SELF_URL = process.env.SELF_URL || 'http://localhost:5000/ping';
+// const SELF_URL = process.env.SELF_URL || 'http://localhost:5000/ping';
 
-cron.schedule('*/5 * * * *', async () => {
-    try {
-        await axios.get(SELF_URL);
-        console.log('Pinged self at', new Date().toLocaleTimeString());
-    } catch (err) {
-        console.log('Error pinging self:', err.message);
-    }
-});
+// cron.schedule('*/5 * * * *', async () => {
+//     try {
+//         await axios.get(SELF_URL);
+//         console.log('Pinged self at', new Date().toLocaleTimeString());
+//     } catch (err) {
+//         console.log('Error pinging self:', err.message);
+//     }
+// });
 
 // Express
 app.get('/download', async (req, res) => {
@@ -100,6 +100,6 @@ app.use('/api/notifications', notificationRouter)
 app.use('/api/company-reviews', companyReviewRouter)
 app.use('/api/profile', profileRouter)
 
-app.listen(PORT, () => {
-    console.log(`App Listening on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`App Listening on http://0.0.0.0:${PORT}`);
 });
