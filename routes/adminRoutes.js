@@ -4,7 +4,6 @@ import Package from '../models/packageModel.js';
 import Skill from '../models/skillModel.js';
 import CandidateCategory from '../models/candidateCategoryModel.js';
 import CompanyCategory from '../models/companyCategoryModel.js';
-import JobCategory from '../models/jobCategoryModel.js';
 import slugify from 'slugify'
 import userAuth from '../middlewares/userAuth.js';
 
@@ -490,109 +489,6 @@ adminRouter.post("/candidate-categories/bulk-import", userAuth, adminAuth, async
       error: "Bulk import failed",
       details: err.message
     });
-  }
-});
-
-// ============================
-// Job Category Management Routes
-// ============================
-
-// Create new job category
-adminRouter.post("/job-categories", userAuth, adminAuth, async (req, res) => {
-  const { name } = req.body;
-
-  try {
-    if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, message: "Job category name is required" });
-    }
-
-    const slug = name.toLowerCase().replace(/\s+/g, '-');
-    const category = new JobCategory({ name: name.trim(), slug });
-    await category.save();
-    res.status(201).json({ success: true, category });
-  } catch (err) {
-    if (err.code === 11000) {
-      return res.status(400).json({ success: false, message: "Job category already exists" });
-    }
-    res.status(400).json({ success: false, message: err.message });
-  }
-});
-
-// Get all job categories
-adminRouter.get("/job-categories", async (req, res) => {
-  try {
-    const categories = await JobCategory.find().sort({ name: 1 });
-    res.json({ success: true, categories });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// Bulk import job categories
-adminRouter.post("/job-categories/bulk-import", userAuth, adminAuth, async (req, res) => {
-  const { categories } = req.body;
-
-  try {
-    const results = {
-      created: 0,
-      skipped: 0,
-      errors: []
-    };
-
-    for (const catData of categories) {
-      try {
-        const { name, slug } = catData;
-
-        if (!name || !name.trim()) {
-          results.errors.push(`Category name is required for entry: ${JSON.stringify(catData)}`);
-          continue;
-        }
-
-        const existingCategory = await JobCategory.findOne({ name: name.trim() });
-
-        if (existingCategory) {
-          results.skipped++;
-          continue;
-        }
-
-        const newCategory = new JobCategory({
-          name: name.trim(),
-          slug: slug || slugify(name, { lower: true })
-        });
-
-        await newCategory.save();
-        results.created++;
-      } catch (err) {
-        results.errors.push(`Error processing category "${catData.name}": ${err.message}`);
-      }
-    }
-
-    res.json({
-      success: true,
-      message: `Import completed. Created: ${results.created}, Skipped: ${results.skipped}, Errors: ${results.errors.length}`,
-      results
-    });
-  } catch (err) {
-    res.status(400).json({
-      success: false,
-      error: "Bulk import failed",
-      details: err.message
-    });
-  }
-});
-
-// Delete a job category
-adminRouter.delete("/job-categories/:id", userAuth, adminAuth, async (req, res) => {
-  const { id } = req.params;
-  try {
-    const category = await JobCategory.findById(id);
-    if (!category) {
-      return res.status(404).json({ success: false, message: "Job category not found" });
-    }
-    await JobCategory.findByIdAndDelete(id);
-    res.json({ success: true, message: `Job category "${category.name}" deleted successfully` });
-  } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
   }
 });
 

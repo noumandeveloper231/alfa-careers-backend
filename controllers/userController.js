@@ -367,7 +367,7 @@ export const updateProfilePicture = async (req, res) => {
     const userId = req.user._id;
 
     try {
-        const authUser = await authModel.findOne(userId);
+        const authUser = await authModel.findById(userId);
 
         let user;
 
@@ -898,7 +898,7 @@ export const getFollowers = async (req, res) => {
         }
 
         // Followers = array of PROFILE IDs
-        const followerProfileIds = profile.followersId || [];
+        const followerProfileIds = profile.followersAccounts || [];
 
         const followersData = await Promise.all(
             followerProfileIds.map(async (pid) => {
