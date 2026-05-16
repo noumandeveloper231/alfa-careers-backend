@@ -1,4 +1,6 @@
 import applicationModel from "../models/applicationModel.js";
+import userProfileModel from "../models/userProfileModel.js";
+import recruiterProfileModel from "../models/recruiterProfileModel.js";
 
 export const getAllApplications = async (req, res) => {
     const userId = req.user._id;
@@ -8,7 +10,12 @@ export const getAllApplications = async (req, res) => {
     }
 
     try {
-        const applications = await applicationModel.find({ applicant: userId })
+        const user = await userProfileModel.findOne({ authId: userId });
+        if (!user) {
+            return res.json({ success: false, message: "User profile not found" });
+        }
+
+        const applications = await applicationModel.find({ applicant: user._id })
             .populate("job", "title company location jobType salary companyProfile")
             .populate("recruiter", "name email")
             .populate("applicant", "name email");
@@ -57,7 +64,12 @@ export const getRecruiterApplications = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        const applications = await applicationModel.find({ recruiter: userId })
+        const recruiter = await recruiterProfileModel.findOne({ authId: userId });
+        if (!recruiter) {
+            return res.json({ success: false, message: "Recruiter profile not found" });
+        }
+
+        const applications = await applicationModel.find({ recruiter: recruiter._id })
             .populate("job", "title company location jobType salary")
             .populate("applicant", "name email phone resume profilePicture")
             .sort({ createdAt: -1 });

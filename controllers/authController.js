@@ -79,14 +79,19 @@ export const register = async (req, res) => {
         }
 
         await auth.save();
+
         if (role == "user") {
+            // Split full name into firstName and lastName for user profiles
+            const nameParts = name.trim().split(' ');
+            const firstName = nameParts[0] || name;
+            const lastName = nameParts.slice(1).join(' ') || '';
             const existingSlug = await userProfileModel.findOne({ slug: slugify(name, { lower: true }) });
             if (existingSlug) {
                 const randomString = Math.floor(1000 + Math.random() * 9000).toString().substring(0, 3);
                 const newSlug = `${slugify(name, { lower: true })}-${auth._id.toString().substring(0, 3) + randomString}`;
-                await userProfileModel.create({ authId: auth._id, role: "user", name, email, slug: newSlug });
+                await userProfileModel.create({ authId: auth._id, role: "user", name: firstName, lastName, email, slug: newSlug });
             } else {
-                await userProfileModel.create({ authId: auth._id, role: "user", name, email, slug: slugify(name, { lower: true }) });
+                await userProfileModel.create({ authId: auth._id, role: "user", name: firstName, lastName, email, slug: slugify(name, { lower: true }) });
             }
         } else {
             await recruiterProfileModel.create({ authId: auth._id, role: "recruiter", name, email });
@@ -634,13 +639,13 @@ export const getAssistants = async (req, res) => {
     const userId = req.user._id;
     
     try {
-        const admin = await recruiterProfileModel.findOne({ authId: userId, isAdmin: true });
-
-        if (!admin) {
+        const authUser = await authModel.findById(userId);
+        if (!authUser || !authUser.isAdmin) {
             return res.json({ success: false, message: "Only Admins are allowed to access this route" });
         }
 
-        const assistants = await recruiterProfileModel.find({ authId: { $in: admin.assistants } });
+        const admin = await recruiterProfileModel.findOne({ authId: userId });
+        const assistants = await recruiterProfileModel.find({ authId: { $in: admin?.assistants || [] } });
 
         console.log('assistants', assistants)
 

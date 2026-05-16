@@ -13,11 +13,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import blogRouter from "./routes/blogRoutes.js";
 import axios from "axios";
-import cron from "node-cron";
 import chatRouter from "./routes/chatBotRoutes.js";
 import reviewRouter from "./routes/reviewRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
-import { startStatusCron } from "./cron/recruiterCron.js";
 import notificationRouter from "./routes/notificationRoutes.js";
 import companyReviewRouter from "./routes/companyReviewRoutes.js";
 import profileRouter from "./routes/profileRoutes.js";
@@ -56,7 +54,6 @@ app.get("/", (req, res) => {
 
 connectDB();
 startJobsCron();
-startStatusCron();
 
 // Express
 app.get("/download", async (req, res) => {

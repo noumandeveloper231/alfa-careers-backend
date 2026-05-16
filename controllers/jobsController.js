@@ -375,7 +375,7 @@ export const updateJob = async (req, res) => {
         await job.save({ validateBeforeSave: !saveAsDraft });
 
         const message = saveAsDraft ? "Draft updated successfully" : "Job updated successfully";
-        return res.statEus(200).json({ success: true, message });
+        return res.status(200).json({ success: true, message });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }

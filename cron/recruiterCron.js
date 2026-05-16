@@ -1,16 +1,3 @@
-import cron from "node-cron";
-import recruiterProfileModel from "../models/recruiterProfileModel.js";
-
-export const startStatusCron = () => {
-  cron.schedule("0 * * * *", async () => {
-    try {
-      await recruiterProfileModel.updateMany(
-        { profileScore: 100, reviewStatus: "pending" },
-        { reviewStatus: "underReview" }
-      );
-      console.log("Checked 100 score ones ✅");
-    } catch (err) {
-      console.error("Cron job failed for ProfileScore one ❌", err);
-    }
-  });
-};
+// No longer needed — reviewStatus is now auto-updated to "underReview"
+// inline whenever a recruiter profile is saved with profileScore === 100.
+// See autoUpdateReviewStatus() in userController.js.

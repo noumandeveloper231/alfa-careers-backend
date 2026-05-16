@@ -11,7 +11,7 @@ const recruiterProfileSchema = new mongoose.Schema({
   company: { type: String, default: '' },
   isCompany: { type: Boolean, default: false },
   companyType: { type: String, default: '' },
-  members: { type: String, default: '0-50', enum: ['0-50', '50-100', '100-500', '500-1000', '1000+'] },
+  members: { type: String, default: '0-50', enum: ['0-50', '11-50', '50-100', '51-200', '201-500', '500+'] },
   foundedIn: { type: String, default: "" },
   website: { type: String, default: "" },
   role: { type: String, default: "user" },

@@ -10,14 +10,14 @@ jobsRouter.get('/getjobbyslug/:slug', getJobBySlug)
 jobsRouter.get('/getalljobs', getAllJobs);
 jobsRouter.get('/getcompanyjobs/:slug', getCompanyJobs);
 jobsRouter.get('/getsavedjobs', userAuth, getSavedJobs);
-jobsRouter.patch('/updatejobstatus', updateJobStatus);
+jobsRouter.patch('/updatejobstatus', userAuth, updateJobStatus);
 jobsRouter.get('/getapprovedjobs', getApprovedJobs);
 jobsRouter.get('/getpendingjobs', getPendingJobs);
 jobsRouter.get('/searchjobs', searchJob);
 jobsRouter.get('/searchjobs/:location', searchJob);
 jobsRouter.post('/getcategoryjobs', getCategoryJobs);
 jobsRouter.get('/getsponsoredjobs', getSponsoredJobs);
-jobsRouter.delete('/removejob/:id', removeJob);
+jobsRouter.delete('/removejob/:id', userAuth, removeJob);
 jobsRouter.put('/updatejob/:id', userAuth, updateJob);
 jobsRouter.get('/getcompanyjobsbyid/:id', getCompanyJobsById);
 

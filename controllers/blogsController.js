@@ -64,7 +64,7 @@ export const getBlog = async (req, res) => {
 
 // Remove the Blog
 export const removeBlog = async (req, res) => {
-    const { slug } = req.param;
+    const { slug } = req.params;
     if (!slug) {
         return res.status(400).json({ success: false, message: 'Please provide a slug' });
     }
