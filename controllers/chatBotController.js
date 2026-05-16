@@ -6,7 +6,9 @@ export const chatBot = async (req, res) => {
   const { question } = req.body;
 
   if (!question) {
-    return res.status(400).json({ success: false, message: "Please provide a question" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Please provide a question" });
   }
 
   try {
@@ -55,7 +57,7 @@ You are AlfaCareer Assistant, a chatbot for the AlfaCareer job portal.
 - Profile Settings → Top right menu → Profile
 - Saved Jobs → Dashboard
 
-**Recruiters**
+**Employees**
 - Post Job → Dashboard → Post New Job
 - Manage Applications → Dashboard → Job Applications
 - Company Profile → Profile menu → Company Settings
@@ -98,7 +100,7 @@ Support Contact: "If unresolved, contact support@alfacareer.com"
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     // GPT-OSS can return content in a few formats; handle safely

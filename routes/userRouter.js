@@ -8,7 +8,7 @@ import {
   updateProfile,
   updateProfilePicture,
   updateResume,
-  getAllRecruiters,
+  getAllEmployees,
   getAllUsers,
   followUnfollowAccount,
   getCompanyDetails,
@@ -21,7 +21,8 @@ import {
   getFollowing,
   getFollowers,
   getCandidate,
-  updateCoverImage, getApplicantDashboardStats,
+  updateCoverImage,
+  getApplicantDashboardStats,
 } from "../controllers/userController.js";
 import express from "express";
 import multer from "multer";
@@ -35,8 +36,8 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
     const isResume = file.fieldname === "resume";
-    const fileExt = file.originalname.split('.').pop().toLowerCase();
-    const baseName = file.originalname.split('.')[0];
+    const fileExt = file.originalname.split(".").pop().toLowerCase();
+    const baseName = file.originalname.split(".")[0];
 
     // Add extension ONLY for PDF files
     const finalPublicId = `${baseName}_${Date.now()}`;
@@ -63,11 +64,11 @@ const upload = multer({
 
 const resumeStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, './uploads/');
+    cb(null, "./uploads/");
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
 const uploadResume = multer({ storage: resumeStorage });
 
@@ -80,10 +81,30 @@ userRouter.get("/checkprofilescore", userAuth, checkProfileScore);
 userRouter.get("/dashboard-stats", userAuth, getApplicantDashboardStats);
 
 // File uploads
-userRouter.post('/updateresume', userAuth, uploadResume.single('resume'), updateResume);
-userRouter.post("/updateprofilepicture", userAuth, upload.single("profilePicture"), updateProfilePicture);
-userRouter.post("/updatebanner", userAuth, upload.single("banner"), updateBanner);
-userRouter.post("/updatecoverimage", userAuth, upload.single("coverImage"), updateCoverImage);
+userRouter.post(
+  "/updateresume",
+  userAuth,
+  uploadResume.single("resume"),
+  updateResume,
+);
+userRouter.post(
+  "/updateprofilepicture",
+  userAuth,
+  upload.single("profilePicture"),
+  updateProfilePicture,
+);
+userRouter.post(
+  "/updatebanner",
+  userAuth,
+  upload.single("banner"),
+  updateBanner,
+);
+userRouter.post(
+  "/updatecoverimage",
+  userAuth,
+  upload.single("coverImage"),
+  updateCoverImage,
+);
 
 // Jobs
 userRouter.post("/savejob", userAuth, saveJob);
@@ -91,9 +112,9 @@ userRouter.post("/applyjob", userAuth, applyJob);
 userRouter.get("/fetchapplicants", userAuth, fetchApplicants);
 userRouter.get("/getcandidate/:slug", getCandidate);
 
-// Users & recruiters
+// Users & employees
 userRouter.get("/allusers", getAllUsers);
-userRouter.get("/allrecruiters", getAllRecruiters);
+userRouter.get("/allemployees", getAllEmployees);
 
 // Social & company
 userRouter.patch("/follow-unfollow-acc/:id", userAuth, followUnfollowAccount);
@@ -103,11 +124,21 @@ userRouter.get("/getFollowing", userAuth, getFollowing);
 userRouter.get("/getFollowers", userAuth, getFollowers);
 
 // Company images
-userRouter.post("/upload-company-images", userAuth, upload.array("companyImages", 10), uploadCompanyImages);
+userRouter.post(
+  "/upload-company-images",
+  userAuth,
+  upload.array("companyImages", 10),
+  uploadCompanyImages,
+);
 userRouter.post("/delete-company-image", userAuth, deleteCompanyImage);
 
 // Project images (applicant profile)
-userRouter.post("/upload-project-images", userAuth, upload.array("projectImages", 10), uploadProjectImages);
+userRouter.post(
+  "/upload-project-images",
+  userAuth,
+  upload.array("projectImages", 10),
+  uploadProjectImages,
+);
 
 userRouter.post("/search-candidates", searchCandidate);
 

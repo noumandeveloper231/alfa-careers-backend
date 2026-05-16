@@ -15,7 +15,7 @@ const userProfileSchema = new mongoose.Schema(
     email: { type: String, default: "" },
     profilePicture: { type: String, default: "" },
     savedJobs: { type: Array, default: [] },
-    role: { type: String, default: "user" }, // applicant, recruiter
+    role: { type: String, default: "user" }, // applicant, employee
     profileScore: { type: Number, default: 0 },
     headline: { type: String, default: "" },
     phone: { type: String, default: "" },

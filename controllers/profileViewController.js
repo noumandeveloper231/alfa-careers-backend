@@ -1,13 +1,13 @@
 import ProfileView from "../models/profileViewModel.js";
 import authModel from "../models/authModels.js";
 import userProfileModel from "../models/userProfileModel.js";
-import recruiterProfileModel from "../models/recruiterProfileModel.js";
+import employeeProfileModel from "../models/employeeProfileModel.js";
 
 // POST /api/profile/:id/view
 export const recordProfileView = async (req, res) => {
   try {
     const viewerId = req.user?._id || null; // anonymous if null
-    const viewedId = req.params.id; // auth _id of viewed user/recruiter
+    const viewedId = req.params.id; // auth _id of viewed user/employee
 
     // Ignore self-view
     if (viewerId && viewerId.toString() === viewedId) {
@@ -32,12 +32,12 @@ export const recordProfileView = async (req, res) => {
         if (viewedAuth.role === "user") {
           await userProfileModel.findOneAndUpdate(
             { authId: viewedId },
-            { $inc: { profileViewsCount: 1 } }
+            { $inc: { profileViewsCount: 1 } },
           );
-        } else if (viewedAuth.role === "recruiter") {
-          await recruiterProfileModel.findOneAndUpdate(
+        } else if (viewedAuth.role === "employee") {
+          await employeeProfileModel.findOneAndUpdate(
             { authId: viewedId },
-            { $inc: { profileViewsCount: 1 } }
+            { $inc: { profileViewsCount: 1 } },
           );
         }
       }
@@ -53,7 +53,7 @@ export const recordProfileView = async (req, res) => {
 // GET /api/profile/:id/views
 export const getProfileViews = async (req, res) => {
   try {
-    const { id } = req.params; // auth _id of viewed user/recruiter
+    const { id } = req.params; // auth _id of viewed user/employee
     const views = await ProfileView.find({ viewedUserId: id })
       .populate("viewerId", "name email profilePicture role")
       .sort({ viewedAt: -1 })
@@ -80,17 +80,17 @@ export const getProfileViewsForPeriod = async (req, res, next) => {
       {
         $match: {
           viewedUserId: userId,
-          viewedAt: { $gte: startDate }
-        }
+          viewedAt: { $gte: startDate },
+        },
       },
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$viewedAt" }
+            $dateToString: { format: "%Y-%m-%d", date: "$viewedAt" },
           },
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
     return res.json({ success: true, views });

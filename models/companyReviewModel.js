@@ -1,8 +1,17 @@
 import mongoose from "mongoose";
 
-const companyReviewSchema = new mongoose.Schema({
-    companyId: { type: mongoose.Schema.Types.ObjectId, ref: "RecruiterProfile", required: true },
-    reviewerId: { type: mongoose.Schema.Types.ObjectId, ref: "UserProfile", required: true },
+const companyReviewSchema = new mongoose.Schema(
+  {
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "EmployeeProfile",
+      required: true,
+    },
+    reviewerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserProfile",
+      required: true,
+    },
     reviewerName: { type: String, required: true },
     reviewerProfilePicture: { type: String, default: "" },
     rating: { type: Number, required: true, min: 1, max: 5 },
@@ -18,12 +27,22 @@ const companyReviewSchema = new mongoose.Schema({
     isVerified: { type: Boolean, default: false },
     isAnonymous: { type: Boolean, default: false },
     jobTitle: { type: String, default: "" },
-    employmentStatus: { type: String, enum: ["current", "former"], default: "current" },
+    employmentStatus: {
+      type: String,
+      enum: ["current", "former"],
+      default: "current",
+    },
     workDuration: { type: String, default: "" }, // e.g., "2 years", "6 months"
     isHelpful: { type: Number, default: 0 }, // count of helpful votes
     isReported: { type: Boolean, default: false },
-    status: { type: String, enum: ["pending", "approved", "rejected"], default: "approved" }
-}, { timestamps: true });
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "approved",
+    },
+  },
+  { timestamps: true },
+);
 
 // Index for better query performance
 companyReviewSchema.index({ companyId: 1, createdAt: -1 });

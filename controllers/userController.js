@@ -1,4 +1,4 @@
-import recruiterProfileModel from "../models/recruiterProfileModel.js";
+import employeeProfileModel from "../models/employeeProfileModel.js";
 import userProfileModel from "../models/userProfileModel.js";
 import authModel from "../models/authModels.js";
 import jobsModel from "../models/jobsModel.js";
@@ -17,12 +17,10 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-export const getAllRecruiters = async (req, res) => {
+export const getAllEmployees = async (req, res) => {
   try {
-    const recruiters = await recruiterProfileModel
-      .find({})
-      .populate("sentJobs");
-    return res.json({ success: true, recruiters, length: recruiters.length });
+    const employees = await employeeProfileModel.find({}).populate("sentJobs");
+    return res.json({ success: true, employees, length: employees.length });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -196,7 +194,7 @@ function calculateProfileScore(user) {
   return percentage.toFixed(0);
 }
 
-function calculateRecruiterProfileScore(user) {
+function calculateEmployeeProfileScore(user) {
   let score = 0;
   const totalPossible = 75; // total points if all conditions are met
 
@@ -236,7 +234,7 @@ export const getUserData = async (req, res) => {
     if (authUser.role === "user") {
       profile = await userProfileModel.findOne({ authId: userId });
     } else {
-      profile = await recruiterProfileModel.findOne({ authId: userId });
+      profile = await employeeProfileModel.findOne({ authId: userId });
     }
 
     if (!profile) {
@@ -318,7 +316,7 @@ export const updateProfile = async (req, res) => {
     } else {
       // ---------------- RECRUITER UPDATE ----------------
 
-      updatedProfile = await recruiterProfileModel.findOneAndUpdate(
+      updatedProfile = await employeeProfileModel.findOneAndUpdate(
         { authId: userId },
         { $set: updateUser },
         { new: true },
@@ -329,7 +327,7 @@ export const updateProfile = async (req, res) => {
       }
 
       updatedProfile.profileScore =
-        calculateRecruiterProfileScore(updatedProfile);
+        calculateEmployeeProfileScore(updatedProfile);
       autoUpdateReviewStatus(updatedProfile);
       await updatedProfile.save();
     }
@@ -387,9 +385,9 @@ export const updateProfilePicture = async (req, res) => {
         ? (user.profileScore = calculateProfileScore(user))
         : "";
     } else {
-      user = await recruiterProfileModel.findOne({ authId: userId });
+      user = await employeeProfileModel.findOne({ authId: userId });
       user.profileScore
-        ? (user.profileScore = calculateRecruiterProfileScore(user))
+        ? (user.profileScore = calculateEmployeeProfileScore(user))
         : "";
       autoUpdateReviewStatus(user);
     }
@@ -430,7 +428,7 @@ export const updateBanner = async (req, res) => {
         .json({ success: false, message: "No file uploaded" });
     }
 
-    let user = await recruiterProfileModel.findOne({ authId: userId });
+    let user = await employeeProfileModel.findOne({ authId: userId });
 
     if (!user) {
       return res
@@ -439,7 +437,7 @@ export const updateBanner = async (req, res) => {
     }
 
     user.banner = req.file?.path;
-    user.profileScore = calculateRecruiterProfileScore(user);
+    user.profileScore = calculateEmployeeProfileScore(user);
     autoUpdateReviewStatus(user);
 
     await user.save();
@@ -555,12 +553,10 @@ export const applyJob = async (req, res) => {
     const { jobId } = req.body;
 
     if (!jobId) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Missing job ID or applicant details",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Missing job ID or applicant details",
+      });
     }
 
     const user = await userProfileModel.findOne({ authId: userId });
@@ -585,7 +581,7 @@ export const applyJob = async (req, res) => {
     const application = new applicationModel({
       job: job._id,
       applicant: user._id,
-      recruiter: job.postedBy,
+      employee: job.postedBy,
       resume: user.resume,
     });
 
@@ -610,18 +606,18 @@ export const fetchApplicants = async (req, res) => {
       return res.json({ success: false, message: "User not found" });
     }
 
-    // Get recruiter profile _id from auth id
-    const recruiter = await recruiterProfileModel.findOne({ authId: userId });
-    if (!recruiter) {
+    // Get employee profile _id from auth id
+    const employee = await employeeProfileModel.findOne({ authId: userId });
+    if (!employee) {
       return res.json({
         success: false,
-        message: "Recruiter profile not found",
+        message: "Employee profile not found",
       });
     }
 
-    // Find all applications for jobs posted by this recruiter
+    // Find all applications for jobs posted by this employee
     const applications = await applicationModel
-      .find({ recruiter: recruiter._id })
+      .find({ employee: employee._id })
       .populate("applicant", "name authId _id email resume phone")
       .populate(
         "job",
@@ -673,8 +669,8 @@ export const followUnfollowAccount = async (req, res) => {
     let followedProfile;
     if (followerAccount.role === "user") {
       followerProfile = await userProfileModel.findOne({ authId: userId });
-    } else if (followerAccount.role === "recruiter") {
-      followerProfile = await recruiterProfileModel.findOne({ authId: userId });
+    } else if (followerAccount.role === "employee") {
+      followerProfile = await employeeProfileModel.findOne({ authId: userId });
     }
 
     // Then, get the followed account's profile
@@ -682,23 +678,21 @@ export const followUnfollowAccount = async (req, res) => {
       followedProfile = await userProfileModel.findOne({
         authId: followedAccountId,
       });
-    } else if (followedAccount.role === "recruiter") {
-      followedProfile = await recruiterProfileModel.findOne({
+    } else if (followedAccount.role === "employee") {
+      followedProfile = await employeeProfileModel.findOne({
         authId: followedAccountId,
       });
     }
 
     if (!followerProfile || !followedProfile) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Profile not found",
-          followedProfile,
-          followerProfile,
-          userId,
-          followedAccountId,
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+        followedProfile,
+        followerProfile,
+        userId,
+        followedAccountId,
+      });
     }
 
     // 3. Logic: Follow or Unfollow
@@ -757,7 +751,7 @@ export const getCompanyDetails = async (req, res) => {
   }
 
   try {
-    let company = await recruiterProfileModel
+    let company = await employeeProfileModel
       .findOne({ slug: slug })
       .populate("sentJobs");
 
@@ -785,7 +779,7 @@ export const followedAccountsDetails = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    const companies = await recruiterProfileModel.find({
+    const companies = await employeeProfileModel.find({
       _id: { $in: user.followedAccounts },
     });
 
@@ -811,7 +805,7 @@ export const getFollowing = async (req, res) => {
     if (user.role === "user") {
       profile = await userProfileModel.findOne({ authId: userId });
     } else {
-      profile = await recruiterProfileModel.findOne({ authId: userId });
+      profile = await employeeProfileModel.findOne({ authId: userId });
     }
 
     if (!profile) {
@@ -830,10 +824,10 @@ export const getFollowing = async (req, res) => {
 
         let role = "user";
 
-        // If not found → try recruiterProfile
+        // If not found → try employeeProfile
         if (!prof) {
-          prof = await recruiterProfileModel.findById(pid);
-          role = "recruiter";
+          prof = await employeeProfileModel.findById(pid);
+          role = "employee";
         }
 
         if (!prof) return null;
@@ -972,7 +966,7 @@ export const getFollowers = async (req, res) => {
     if (user.role === "user") {
       profile = await userProfileModel.findOne({ authId: userId });
     } else {
-      profile = await recruiterProfileModel.findOne({ authId: userId });
+      profile = await employeeProfileModel.findOne({ authId: userId });
     }
 
     if (!profile) {
@@ -991,10 +985,10 @@ export const getFollowers = async (req, res) => {
 
         let role = "user";
 
-        // If not found, try recruiter profile
+        // If not found, try employee profile
         if (!prof) {
-          prof = await recruiterProfileModel.findById(pid);
-          role = "recruiter";
+          prof = await employeeProfileModel.findById(pid);
+          role = "employee";
         }
 
         if (!prof) return null;
@@ -1033,29 +1027,26 @@ export const uploadCompanyImages = async (req, res) => {
         .json({ success: false, message: "No images uploaded" });
     }
 
-    const recruiter = await recruiterProfileModel.findOne({ authId: userId });
+    const employee = await employeeProfileModel.findOne({ authId: userId });
 
-    if (!recruiter) {
+    if (!employee) {
       return res
         .status(404)
-        .json({ success: false, message: "Recruiter profile not found" });
+        .json({ success: false, message: "Employee profile not found" });
     }
 
     // Get image paths from uploaded files
     const imagePaths = req.files.map((file) => file.path);
 
     // Add new images to existing ones
-    recruiter.companyImages = [
-      ...(recruiter.companyImages || []),
-      ...imagePaths,
-    ];
+    employee.companyImages = [...(employee.companyImages || []), ...imagePaths];
 
-    await recruiter.save();
+    await employee.save();
 
     res.json({
       success: true,
       message: "Company images uploaded successfully",
-      images: recruiter.companyImages,
+      images: employee.companyImages,
     });
   } catch (error) {
     console.error(error);
@@ -1078,25 +1069,25 @@ export const deleteCompanyImage = async (req, res) => {
         .json({ success: false, message: "Image URL is required" });
     }
 
-    const recruiter = await recruiterProfileModel.findOne({ authId: userId });
+    const employee = await employeeProfileModel.findOne({ authId: userId });
 
-    if (!recruiter) {
+    if (!employee) {
       return res
         .status(404)
-        .json({ success: false, message: "Recruiter profile not found" });
+        .json({ success: false, message: "Employee profile not found" });
     }
 
     // Remove image from array
-    recruiter.companyImages = recruiter.companyImages.filter(
+    employee.companyImages = employee.companyImages.filter(
       (img) => img !== imageUrl,
     );
 
-    await recruiter.save();
+    await employee.save();
 
     res.json({
       success: true,
       message: "Company image deleted successfully",
-      images: recruiter.companyImages,
+      images: employee.companyImages,
     });
   } catch (error) {
     console.error(error);

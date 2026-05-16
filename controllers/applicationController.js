@@ -1,81 +1,100 @@
 import applicationModel from "../models/applicationModel.js";
 import userProfileModel from "../models/userProfileModel.js";
-import recruiterProfileModel from "../models/recruiterProfileModel.js";
+import employeeProfileModel from "../models/employeeProfileModel.js";
 
 export const getAllApplications = async (req, res) => {
-    const userId = req.user._id;
+  const userId = req.user._id;
 
-    if (!userId) {
-        return res.json({ success: false, message: "Unauthorized" });
+  if (!userId) {
+    return res.json({ success: false, message: "Unauthorized" });
+  }
+
+  try {
+    const user = await userProfileModel.findOne({ authId: userId });
+    if (!user) {
+      return res.json({ success: false, message: "User profile not found" });
     }
 
-    try {
-        const user = await userProfileModel.findOne({ authId: userId });
-        if (!user) {
-            return res.json({ success: false, message: "User profile not found" });
-        }
+    const applications = await applicationModel
+      .find({ applicant: user._id })
+      .populate("job", "title company location jobType salary companyProfile")
+      .populate("employee", "name email")
+      .populate("applicant", "name email");
 
-        const applications = await applicationModel.find({ applicant: user._id })
-            .populate("job", "title company location jobType salary companyProfile")
-            .populate("recruiter", "name email")
-            .populate("applicant", "name email");
-
-        if (!applications || applications.length === 0) {
-            return res.json({ success: false, message: "No Applications Found!" })
-        }
-
-        return res.json({ success: true, applications });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    if (!applications || applications.length === 0) {
+      return res.json({ success: false, message: "No Applications Found!" });
     }
-}
+
+    return res.json({ success: true, applications });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Server Error", error: error.message });
+  }
+};
 
 export const updateApplcationStatus = async (req, res) => {
-    const userId = req.user._id; // recruiter id
+  const userId = req.user._id; // employee id
 
-    if (!userId) {
-        return res.status(401).json({ success: false, message: "Unauthorized" });
+  if (!userId) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  try {
+    const { status, applicationId } = req.body;
+
+    if (!status || !applicationId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing status or application ID" });
     }
 
-    try {
-        const { status, applicationId } = req.body;
+    const application = await applicationModel.findById(applicationId);
 
-        if (!status || !applicationId) {
-            return res.status(400).json({ success: false, message: "Missing status or application ID" });
-        }
-
-        const application = await applicationModel.findById(applicationId);
-
-        if (!application) {
-            return res.status(404).json({ success: false, message: "Application not found" });
-        }
-
-        application.status = status;
-        await application.save();
-
-        return res.json({ success: true, message: `Application ${application.status}`, application });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    if (!application) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found" });
     }
-}
 
-// Get applications for recruiter
-export const getRecruiterApplications = async (req, res) => {
-    try {
-        const userId = req.user._id;
+    application.status = status;
+    await application.save();
 
-        const recruiter = await recruiterProfileModel.findOne({ authId: userId });
-        if (!recruiter) {
-            return res.json({ success: false, message: "Recruiter profile not found" });
-        }
+    return res.json({
+      success: true,
+      message: `Application ${application.status}`,
+      application,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Server Error", error: error.message });
+  }
+};
 
-        const applications = await applicationModel.find({ recruiter: recruiter._id })
-            .populate("job", "title company location jobType salary")
-            .populate("applicant", "name email phone resume profilePicture")
-            .sort({ createdAt: -1 });
+// Get applications for employee
+export const getEmployeeApplications = async (req, res) => {
+  try {
+    const userId = req.user._id;
 
-        return res.json({ success: true, applications });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    const employee = await employeeProfileModel.findOne({ authId: userId });
+    if (!employee) {
+      return res.json({
+        success: false,
+        message: "Employee profile not found",
+      });
     }
-}
+
+    const applications = await applicationModel
+      .find({ employee: employee._id })
+      .populate("job", "title company location jobType salary")
+      .populate("applicant", "name email phone resume profilePicture")
+      .sort({ createdAt: -1 });
+
+    return res.json({ success: true, applications });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Server Error", error: error.message });
+  }
+};

@@ -1,11 +1,19 @@
 import express from "express";
 import userAuth from "../middlewares/userAuth.js";
-import { getAllApplications, updateApplcationStatus, getRecruiterApplications } from "../controllers/applicationController.js";
+import {
+  getAllApplications,
+  updateApplcationStatus,
+  getEmployeeApplications,
+} from "../controllers/applicationController.js";
 
 const applicationRouter = express.Router();
 
-applicationRouter.get("/appliedjobs", userAuth, getAllApplications)
-applicationRouter.post('/update-status', userAuth, updateApplcationStatus)
-applicationRouter.get("/recruiter-applications", userAuth, getRecruiterApplications)
+applicationRouter.get("/appliedjobs", userAuth, getAllApplications);
+applicationRouter.post("/update-status", userAuth, updateApplcationStatus);
+applicationRouter.get(
+  "/employee-applications",
+  userAuth,
+  getEmployeeApplications,
+);
 
 export default applicationRouter;
