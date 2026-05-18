@@ -30,6 +30,7 @@ const employeeProfileSchema = new mongoose.Schema(
     address: { type: String, default: "" },
     country: { type: String, default: "" },
     state: { type: String, default: "" },
+    zip: { type: String, default: "" },
     latitude: { type: Number },
     longitude: { type: Number },
     contactNumber: { type: String, default: "" },

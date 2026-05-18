@@ -17,16 +17,6 @@ const packageSchema = new mongoose.Schema({
         enum: ["USD", "EUR", "GBP", "PKR", "INR", "AED"],
         default: "USD"
     },
-    duration: {
-        type: Number,
-        required: true,
-        min: 1
-    },
-    durationUnit: {
-        type: String,
-        enum: ["month", "year"],
-        default: "month"
-    },
     jobPostings: {
         type: Number,
         required: true,
@@ -87,6 +77,34 @@ const packageSchema = new mongoose.Schema({
     displayOrder: {
         type: Number,
         default: 0
+    },
+    packageAudience: {
+        type: String,
+        enum: ["employee", "jobSeeker"],
+        default: "employee"
+    },
+    jobsToApply: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    wishlistJobs: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    followCompanies: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    companyInJobs: {
+        type: Boolean,
+        default: false
+    },
+    companyInformation: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

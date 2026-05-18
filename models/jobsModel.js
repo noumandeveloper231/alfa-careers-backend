@@ -5,6 +5,13 @@ const jobsSchema = new mongoose.Schema(
     title: { type: String, required: true },
     description: { type: String, required: true },
     location: { type: String, required: true },
+    address: { type: String, default: "" },
+    city: { type: String, default: "" },
+    state: { type: String, default: "" },
+    country: { type: String, default: "" },
+    zip: { type: String, default: "" },
+    latitude: { type: Number },
+    longitude: { type: Number },
     slug: { type: String, required: true },
 
     // Job Type
@@ -77,8 +84,12 @@ const jobsSchema = new mongoose.Schema(
     // Status
     approved: {
       type: String,
-      enum: ["draft", "pending", "approved", "rejected"],
+      enum: ["draft", "pending", "approved", "rejected", "modified"],
       default: "pending",
+    },
+    modifiedData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
     },
     isActive: {
       type: Boolean,

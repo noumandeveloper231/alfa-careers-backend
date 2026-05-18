@@ -177,14 +177,30 @@ export const updateJobStatus = async (req, res) => {
   }
 
   try {
-    const job = await jobsModel.findByIdAndUpdate(
-      jobId,
-      { approved: status },
-      { new: true },
-    );
+    const job = await jobsModel.findById(jobId);
     if (!job) {
       return res.status(404).json({ success: false, message: "Job Not Found" });
     }
+
+    if (job.approved === "modified") {
+      if (status === "approved") {
+        // Apply modified data to the live job
+        const modifiedData = job.modifiedData || {};
+        Object.keys(modifiedData).forEach((key) => {
+          if (key !== "modifiedData") job[key] = modifiedData[key];
+        });
+        job.approved = "approved";
+        job.modifiedData = null;
+      } else {
+        // Reject the modification — keep the old version
+        job.modifiedData = null;
+        job.approved = "approved";
+      }
+    } else {
+      job.approved = status;
+    }
+
+    await job.save();
 
     return res
       .status(200)
@@ -197,7 +213,7 @@ export const updateJobStatus = async (req, res) => {
 export const getApprovedJobs = async (req, res) => {
   try {
     const jobs = await jobsModel
-      .find({ approved: "approved", isActive: true })
+      .find({ approved: { $in: ["approved", "modified"] }, isActive: true })
       .populate("postedBy");
 
     const categorySet = new Set(jobs.map((job) => job.category));
@@ -219,6 +235,17 @@ export const getPendingJobs = async (req, res) => {
   }
 };
 
+export const getModifiedJobs = async (req, res) => {
+  try {
+    const jobs = await jobsModel
+      .find({ approved: "modified" })
+      .populate("postedBy");
+    return res.json({ success: true, jobs });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getActiveJobs = async (req, res) => {
   try {
     const result = await jobsModel.updateMany(
@@ -230,7 +257,7 @@ export const getActiveJobs = async (req, res) => {
 
 export const searchJob = async (req, res) => {
   try {
-    const { search } = req.query;
+    const search = req.query.search || req.query.q;
     const { location } = req.params;
 
     console.log(search, location);
@@ -242,7 +269,7 @@ export const searchJob = async (req, res) => {
       approvedJobs = await jobsModel
         .find({
           title: { $regex: search, $options: "i" },
-          approved: "approved",
+          approved: { $in: ["approved", "modified"] },
           isActive: true,
           // sponsored: false
         })
@@ -250,12 +277,16 @@ export const searchJob = async (req, res) => {
     } else {
       approvedJobs = await jobsModel
         .find({
-          approved: "approved",
+          approved: { $in: ["approved", "modified"] },
           isActive: true,
           sponsored: false,
           $or: [
             { title: { $regex: search, $options: "i" } },
             { location: { $regex: location, $options: "i" } },
+            { city: { $regex: location, $options: "i" } },
+            { country: { $regex: location, $options: "i" } },
+            { state: { $regex: location, $options: "i" } },
+            { address: { $regex: location, $options: "i" } },
             { company: { $regex: search, $options: "i" } },
             { category: { $regex: search, $options: "i" } },
             { subCategory: { $regex: search, $options: "i" } },
@@ -279,7 +310,7 @@ export const getCategoryJobs = async (req, res) => {
     const approvedCategoryJobs = await jobsModel
       .find({
         category: cat,
-        approved: "approved",
+        approved: { $in: ["approved", "modified"] },
         isActive: true,
       })
       .populate("postedBy");
@@ -301,7 +332,7 @@ export const getSponsoredJobs = async (req, res) => {
     const sponsoredJobs = await jobsModel
       .find({
         sponsored: true,
-        approved: "approved",
+        approved: { $in: ["approved", "modified"] },
         isActive: true,
       })
       .populate("postedBy");
@@ -396,16 +427,23 @@ export const updateJob = async (req, res) => {
       return res.status(403).json({ success: false, message: "Unauthorized" });
     }
 
-    // Update job fields
-    Object.keys(jobData).forEach((key) => {
-      job[key] = jobData[key];
-    });
+    if (!saveAsDraft && (job.approved === "approved" || job.approved === "modified")) {
+      // Store modifications for admin review — keep live version intact
+      job.modifiedData = jobData;
+      job.approved = "modified";
+    } else {
+      // Normal update — apply fields directly
+      Object.keys(jobData).forEach((key) => {
+        if (key !== "modifiedData") job[key] = jobData[key];
+      });
 
-    job.approved = saveAsDraft
-      ? "draft"
-      : job.approved === "draft"
-        ? "pending"
-        : job.approved;
+      job.approved = saveAsDraft
+        ? "draft"
+        : job.approved === "draft"
+          ? "pending"
+          : job.approved;
+    }
+
     job.applicationDeadline = jobData.closingDays
       ? new Date(Date.now() + jobData.closingDays * 24 * 60 * 60 * 1000)
       : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -414,7 +452,9 @@ export const updateJob = async (req, res) => {
 
     const message = saveAsDraft
       ? "Draft updated successfully"
-      : "Job updated successfully";
+      : job.approved === "modified"
+        ? "Your changes have been submitted for admin review. The current published version will stay live until approved."
+        : "Job updated successfully";
     return res.status(200).json({ success: true, message });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

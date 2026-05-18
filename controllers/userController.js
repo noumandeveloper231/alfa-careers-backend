@@ -8,6 +8,35 @@ import companyReviewModel from "../models/companyReviewModel.js";
 import ProfileView from "../models/profileViewModel.js";
 import slugify from "slugify";
 
+export const checkUserName = async (req, res) => {
+  try {
+    const { userName } = req.params;
+    const currentUserId = req.user?._id;
+
+    const existing = await userProfileModel.findOne({
+      userName: { $regex: new RegExp(`^${userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      ...(currentUserId ? { authId: { $ne: currentUserId } } : {}),
+    });
+
+    let currentUserName = null;
+    let userNameUpdatedAt = null;
+    if (currentUserId) {
+      const currentUserProfile = await userProfileModel.findOne(
+        { authId: currentUserId },
+        'userName userNameUpdatedAt updatedAt',
+      );
+      if (currentUserProfile) {
+        currentUserName = currentUserProfile.userName;
+        userNameUpdatedAt = currentUserProfile.userNameUpdatedAt || currentUserProfile.updatedAt;
+      }
+    }
+
+    return res.json({ success: true, available: !existing, currentUserName, userNameUpdatedAt });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getAllUsers = async (req, res) => {
   try {
     const users = await userProfileModel.find({});
@@ -62,6 +91,11 @@ function calculateProfileScore(user) {
   }
 
   if (user.age && user.age.trim() !== "") {
+    score += 2;
+  }
+
+  // Username (2 points)
+  if (user.userName && user.userName.trim() !== "") {
     score += 2;
   }
 
@@ -272,38 +306,90 @@ export const updateProfile = async (req, res) => {
         return res.json({ success: false, message: "User Not Found!" });
       }
 
+      // ---------------- REQUIRED FIELD VALIDATION ----------------
+
+      const requiredFields = [
+        { key: 'name', label: 'First Name' },
+        { key: 'category', label: 'Category' },
+        { key: 'currentPosition', label: 'Current Position' },
+        { key: 'country', label: 'Country' },
+      ];
+
+      for (const field of requiredFields) {
+        const val = updateUser[field.key];
+        if (!val || (typeof val === 'string' && val.trim() === '')) {
+          return res.json({
+            success: false,
+            message: `${field.label} is required`,
+          });
+        }
+      }
+
+      // ---------------- USERNAME ONCE ONLY ----------------
+
+      const newUserName = updateUser.userName?.trim();
+      const oldUserName = oldProfile.userName?.trim();
+
+      if (oldUserName && newUserName && newUserName !== oldUserName) {
+        return res.json({
+          success: false,
+          message: "Username cannot be changed after onboarding.",
+        });
+      }
+
       // ---------------- SLUG LOGIC ----------------
 
-      const baseNameForSlug =
-        updateUser.name && updateUser.name.trim() !== ""
-          ? updateUser.name.trim().toLowerCase()
-          : oldProfile.name.trim().toLowerCase();
+      let finalSlug = oldProfile.slug;
 
-      const baseSlug = slugify(baseNameForSlug, { lower: true });
-
-      // check slug existence excluding current user
-      const existingSlug = await userProfileModel.findOne({
-        slug: baseSlug,
-        authId: { $ne: userId },
-      });
-
-      let finalSlug = baseSlug;
-
-      if (existingSlug) {
-        const authIdSuffix = userId.toString().slice(-3);
-        finalSlug = `${baseSlug}-${authIdSuffix}`;
+      if (newUserName && newUserName !== "") {
+        // check raw userName uniqueness
+        const existingUser = await userProfileModel.findOne({
+          userName: newUserName,
+          authId: { $ne: userId },
+        });
+        if (existingUser) {
+          return res.json({
+            success: false,
+            message: "Username is already taken. Please choose another one.",
+          });
+        }
+        const baseSlug = slugify(newUserName, { lower: true });
+        const existingSlug = await userProfileModel.findOne({
+          slug: baseSlug,
+          authId: { $ne: userId },
+        });
+        finalSlug = existingSlug
+          ? `${baseSlug}-${userId.toString().slice(-3)}`
+          : baseSlug;
+      } else if (updateUser.name && updateUser.name.trim() !== "") {
+        // fallback: generate slug from name (backward compat)
+        const baseSlug = slugify(
+          updateUser.name.trim().toLowerCase(),
+          { lower: true },
+        );
+        const existingSlug = await userProfileModel.findOne({
+          slug: baseSlug,
+          authId: { $ne: userId },
+        });
+        finalSlug = existingSlug
+          ? `${baseSlug}-${userId.toString().slice(-3)}`
+          : baseSlug;
       }
 
       // ---------------- UPDATE PROFILE ----------------
 
+      const setFields = {
+        ...updateUser,
+        slug: finalSlug,
+      };
+
+      if (newUserName && newUserName !== oldUserName) {
+        setFields.userNameUpdatedAt = new Date();
+      }
+
       updatedProfile = await userProfileModel.findOneAndUpdate(
         { authId: userId },
-        {
-          $set: {
-            ...updateUser,
-            slug: finalSlug,
-          },
-        },
+        { $set: setFields },
         { new: true },
       );
 
@@ -315,6 +401,26 @@ export const updateProfile = async (req, res) => {
       await updatedProfile.save();
     } else {
       // ---------------- RECRUITER UPDATE ----------------
+
+      const employeeRequiredFields = [
+        { key: 'name', label: 'Name' },
+        { key: 'slug', label: 'Slug' },
+        { key: 'company', label: 'Company Name' },
+        { key: 'category', label: 'Category' },
+        { key: 'country', label: 'Country' },
+        { key: 'city', label: 'City' },
+        { key: 'companyType', label: 'Company Type' },
+      ];
+
+      for (const field of employeeRequiredFields) {
+        const val = updateUser[field.key];
+        if (!val || (typeof val === 'string' && val.trim() === '')) {
+          return res.json({
+            success: false,
+            message: `${field.label} is required`,
+          });
+        }
+      }
 
       updatedProfile = await employeeProfileModel.findOneAndUpdate(
         { authId: userId },
@@ -1161,18 +1267,25 @@ export const searchCandidate = async (req, res) => {
 
     console.log(search, location);
 
-    // Search for approved jobs matching title (case-insensitive)
+    if (!search && !location) {
+      return res.json({ success: true, candidates: [] });
+    }
+
     let candidates;
 
-    if (!location) {
+    if (!location && search) {
       candidates = await userProfileModel.find({
         name: { $regex: search, $options: "i" },
+      });
+    } else if (!search && location) {
+      candidates = await userProfileModel.find({
+        location: { $regex: location, $options: "i" },
       });
     } else {
       candidates = await userProfileModel.find({
         $or: [
-          { name: { $regex: search, $options: "i" } },
-          { location: { $regex: location, $options: "i" } },
+          ...(search ? [{ name: { $regex: search, $options: "i" } }] : []),
+          ...(location ? [{ location: { $regex: location, $options: "i" } }] : []),
         ],
       });
     }

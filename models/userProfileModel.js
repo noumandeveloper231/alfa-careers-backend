@@ -12,6 +12,7 @@ const userProfileSchema = new mongoose.Schema(
     name: { type: String, default: "" },
     lastName: { type: String, default: "" },
     slug: { type: String, default: "" },
+    userName: { type: String, unique: true, sparse: true, default: "" },
     email: { type: String, default: "" },
     profilePicture: { type: String, default: "" },
     savedJobs: { type: Array, default: [] },
@@ -21,8 +22,11 @@ const userProfileSchema = new mongoose.Schema(
     phone: { type: String, default: "" },
     country: { type: String, default: "" },
     city: { type: String, default: "" },
+    state: { type: String, default: "" },
     address: { type: String, default: "" },
     postal: { type: String, default: "" },
+    latitude: { type: Number },
+    longitude: { type: Number },
     appliedJobs: { type: Array, default: [] },
     skills: { type: Array, default: [] },
     isBanned: { type: Boolean, default: false },
@@ -119,6 +123,7 @@ const userProfileSchema = new mongoose.Schema(
         description: { type: String },
       },
     ],
+    userNameUpdatedAt: { type: Date },
     profileViewsCount: { type: Number, default: 0 },
     // 📈 Profile Analytics
     profileViews: [

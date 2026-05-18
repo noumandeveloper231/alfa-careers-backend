@@ -5,7 +5,6 @@ import userProfileModel from "../models/userProfileModel.js";
 import employeeProfileModel from "../models/employeeProfileModel.js";
 import SibApiV3Sdk from "sib-api-v3-sdk";
 import "dotenv/config";
-import slugify from "slugify";
 
 // Configure Brevo client once
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
@@ -88,32 +87,13 @@ export const register = async (req, res) => {
       const nameParts = name.trim().split(" ");
       const firstName = nameParts[0] || name;
       const lastName = nameParts.slice(1).join(" ") || "";
-      const existingSlug = await userProfileModel.findOne({
-        slug: slugify(name, { lower: true }),
+      await userProfileModel.create({
+        authId: auth._id,
+        role: "user",
+        name: firstName,
+        lastName,
+        email,
       });
-      if (existingSlug) {
-        const randomString = Math.floor(1000 + Math.random() * 9000)
-          .toString()
-          .substring(0, 3);
-        const newSlug = `${slugify(name, { lower: true })}-${auth._id.toString().substring(0, 3) + randomString}`;
-        await userProfileModel.create({
-          authId: auth._id,
-          role: "user",
-          name: firstName,
-          lastName,
-          email,
-          slug: newSlug,
-        });
-      } else {
-        await userProfileModel.create({
-          authId: auth._id,
-          role: "user",
-          name: firstName,
-          lastName,
-          email,
-          slug: slugify(name, { lower: true }),
-        });
-      }
     } else {
       await employeeProfileModel.create({
         authId: auth._id,

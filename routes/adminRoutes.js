@@ -496,43 +496,49 @@ adminRouter.post("/candidate-categories/bulk-import", userAuth, adminAuth, async
 // Package Management Routes
 // ============================
 
-// Get all packages
-adminRouter.get("/packages", async (req, res) => {
+// Get all employee packages
+adminRouter.get("/packages/employee", async (req, res) => {
   try {
-    const packages = await Package.find().sort({ displayOrder: 1, createdAt: -1 });
+    const packages = await Package.find({ packageAudience: "employee" }).sort({ displayOrder: 1, createdAt: -1 });
     res.json({ success: true, packages });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Create new package
-adminRouter.post("/packages", userAuth, adminAuth, async (req, res) => {
+// Get all job seeker packages
+adminRouter.get("/packages/job-seeker", async (req, res) => {
+  try {
+    const packages = await Package.find({ packageAudience: "jobSeeker" }).sort({ displayOrder: 1, createdAt: -1 });
+    res.json({ success: true, packages });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Create new employee package
+adminRouter.post("/packages/employee", userAuth, adminAuth, async (req, res) => {
   const {
-    name, price, currency, duration, durationUnit, jobPostings, featuredJobs,
+    name, price, currency, jobPostings, featuredJobs,
     candidateAccess, candidatesFollow, inviteCandidates, sendMessages,
     printProfiles, reviewComment, viewCandidateInfo, support, packageType,
     features, displayOrder
   } = req.body;
 
   try {
-    // Validate required fields
-    if (name == null || duration == null || jobPostings == null) {
+    if (name == null || jobPostings == null) {
       return res.status(400).json({
         success: false,
-        error: "Name, duration, and job postings are required"
+        error: "Name and job postings are required"
       });
     }
 
-    // Auto-set price to 0 for Free packages
     const finalPrice = packageType === "Free" ? 0 : (price || 0);
 
     const newPackage = new Package({
       name: name.trim(),
       price: finalPrice,
       currency: currency || "USD",
-      duration,
-      durationUnit: durationUnit || "month",
       jobPostings,
       featuredJobs: featuredJobs || 0,
       candidateAccess: candidateAccess || false,
@@ -545,13 +551,14 @@ adminRouter.post("/packages", userAuth, adminAuth, async (req, res) => {
       support: support || "Limited",
       packageType: packageType || "Standard",
       features: features || [],
-      displayOrder: displayOrder || 0
+      displayOrder: displayOrder || 0,
+      packageAudience: "employee"
     });
 
     await newPackage.save();
     res.status(201).json({
       success: true,
-      message: "Package created successfully",
+      message: "Employee package created successfully",
       package: newPackage
     });
   } catch (err) {
@@ -566,14 +573,65 @@ adminRouter.post("/packages", userAuth, adminAuth, async (req, res) => {
   }
 });
 
-// Update package
-adminRouter.patch("/packages/:id", userAuth, adminAuth, async (req, res) => {
+// Create new job seeker package
+adminRouter.post("/packages/job-seeker", userAuth, adminAuth, async (req, res) => {
+  const {
+    name, price, currency, jobsToApply, wishlistJobs,
+    followCompanies, companyInJobs, companyInformation, support, packageType,
+    features, displayOrder
+  } = req.body;
+
+  try {
+    if (name == null || jobsToApply == null) {
+      return res.status(400).json({
+        success: false,
+        error: "Name and jobs to apply are required"
+      });
+    }
+
+    const finalPrice = packageType === "Free" ? 0 : (price || 0);
+
+    const newPackage = new Package({
+      name: name.trim(),
+      price: finalPrice,
+      currency: currency || "USD",
+      jobsToApply: jobsToApply || 0,
+      wishlistJobs: wishlistJobs || 0,
+      followCompanies: followCompanies || 0,
+      companyInJobs: companyInJobs || false,
+      companyInformation: companyInformation || false,
+      support: support || "Limited",
+      packageType: packageType || "Standard",
+      features: features || [],
+      displayOrder: displayOrder || 0,
+      packageAudience: "jobSeeker"
+    });
+
+    await newPackage.save();
+    res.status(201).json({
+      success: true,
+      message: "Job seeker package created successfully",
+      package: newPackage
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      res.status(400).json({
+        success: false,
+        error: "A package with this name already exists"
+      });
+    } else {
+      res.status(400).json({ success: false, error: err.message });
+    }
+  }
+});
+
+// Update employee package
+adminRouter.patch("/packages/employee/:id", userAuth, adminAuth, async (req, res) => {
   const { id } = req.params;
   const updates = {};
 
-  // Only include fields that are provided
   const allowedUpdates = [
-    'name', 'price', 'currency', 'duration', 'durationUnit', 'jobPostings', 'featuredJobs',
+    'name', 'price', 'currency', 'jobPostings', 'featuredJobs',
     'candidateAccess', 'candidatesFollow', 'inviteCandidates', 'sendMessages',
     'printProfiles', 'reviewComment', 'viewCandidateInfo', 'support', 'packageType',
     'features', 'displayOrder'
@@ -585,7 +643,6 @@ adminRouter.patch("/packages/:id", userAuth, adminAuth, async (req, res) => {
     }
   });
 
-  // Auto-set price to 0 if packageType is being changed to Free
   if (updates.packageType === "Free") {
     updates.price = 0;
   }
@@ -609,7 +666,7 @@ adminRouter.patch("/packages/:id", userAuth, adminAuth, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Package updated successfully",
+      message: "Employee package updated successfully",
       package: updatedPackage
     });
   } catch (err) {
@@ -624,8 +681,63 @@ adminRouter.patch("/packages/:id", userAuth, adminAuth, async (req, res) => {
   }
 });
 
-// Delete package
-adminRouter.delete("/packages/:id", userAuth, adminAuth, async (req, res) => {
+// Update job seeker package
+adminRouter.patch("/packages/job-seeker/:id", userAuth, adminAuth, async (req, res) => {
+  const { id } = req.params;
+  const updates = {};
+
+  const allowedUpdates = [
+    'name', 'price', 'currency', 'jobsToApply', 'wishlistJobs',
+    'followCompanies', 'companyInJobs', 'companyInformation', 'support', 'packageType',
+    'features', 'displayOrder'
+  ];
+
+  allowedUpdates.forEach(field => {
+    if (req.body[field] !== undefined) {
+      updates[field] = req.body[field];
+    }
+  });
+
+  if (updates.packageType === "Free") {
+    updates.price = 0;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: "No updates provided"
+    });
+  }
+
+  try {
+    const updatedPackage = await Package.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+
+    if (!updatedPackage) {
+      return res.status(404).json({
+        success: false,
+        error: "Package not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Job seeker package updated successfully",
+      package: updatedPackage
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      res.status(400).json({
+        success: false,
+        error: "A package with this name already exists"
+      });
+    } else {
+      res.status(400).json({ success: false, error: err.message });
+    }
+  }
+});
+
+// Delete employee package
+adminRouter.delete("/packages/employee/:id", userAuth, adminAuth, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -649,8 +761,60 @@ adminRouter.delete("/packages/:id", userAuth, adminAuth, async (req, res) => {
   }
 });
 
-// Toggle package active status
-adminRouter.patch("/packages/:id/toggle-status", userAuth, adminAuth, async (req, res) => {
+// Delete job seeker package
+adminRouter.delete("/packages/job-seeker/:id", userAuth, adminAuth, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const pkg = await Package.findById(id);
+
+    if (!pkg) {
+      return res.status(404).json({
+        success: false,
+        error: "Package not found"
+      });
+    }
+
+    await Package.findByIdAndDelete(id);
+
+    res.json({
+      success: true,
+      message: `Package "${pkg.name}" deleted successfully`
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Toggle employee package active status
+adminRouter.patch("/packages/employee/:id/toggle-status", userAuth, adminAuth, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const pkg = await Package.findById(id);
+
+    if (!pkg) {
+      return res.status(404).json({
+        success: false,
+        error: "Package not found"
+      });
+    }
+
+    pkg.isActive = !pkg.isActive;
+    await pkg.save();
+
+    res.json({
+      success: true,
+      message: `Package ${pkg.isActive ? 'activated' : 'deactivated'} successfully`,
+      package: pkg
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Toggle job seeker package active status
+adminRouter.patch("/packages/job-seeker/:id/toggle-status", userAuth, adminAuth, async (req, res) => {
   const { id } = req.params;
 
   try {

@@ -23,6 +23,7 @@ import {
   getCandidate,
   updateCoverImage,
   getApplicantDashboardStats,
+  checkUserName,
 } from "../controllers/userController.js";
 import express from "express";
 import multer from "multer";
@@ -141,5 +142,8 @@ userRouter.post(
 );
 
 userRouter.post("/search-candidates", searchCandidate);
+
+// Username
+userRouter.get("/check-username/:userName", userAuth, checkUserName);
 
 export default userRouter;

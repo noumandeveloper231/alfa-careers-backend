@@ -12,17 +12,17 @@ import analyticRouter from "./routes/analyticRoutes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import blogRouter from "./routes/blogRoutes.js";
-import axios from "axios";
-import chatRouter from "./routes/chatBotRoutes.js";
 import reviewRouter from "./routes/reviewRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
 import notificationRouter from "./routes/notificationRoutes.js";
 import companyReviewRouter from "./routes/companyReviewRoutes.js";
 import profileRouter from "./routes/profileRoutes.js";
+import paymentRouter from "./routes/paymentRoutes.js";
 
 const app = express();
 app.use(cookieParser());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -55,7 +55,6 @@ app.get("/", (req, res) => {
 connectDB();
 startJobsCron();
 
-// Express
 app.get("/download", async (req, res) => {
   const imageUrl = req.query.url;
   const response = await fetch(imageUrl);
@@ -71,12 +70,12 @@ app.use("/api/user", userRouter);
 app.use("/api/applications", applicationRouter);
 app.use("/api/analytics", analyticRouter);
 app.use("/api/blog", blogRouter);
-app.use("/api/chat", chatRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/company-reviews", companyReviewRouter);
 app.use("/api/profile", profileRouter);
+app.use("/api/payment", paymentRouter);
 
 if (process.env.NODE_ENV === "production") {
   app.listen(PORT, "0.0.0.0", () => {
