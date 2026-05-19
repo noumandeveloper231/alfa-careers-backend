@@ -12,7 +12,7 @@ const userProfileSchema = new mongoose.Schema(
     name: { type: String, default: "" },
     lastName: { type: String, default: "" },
     slug: { type: String, default: "" },
-    userName: { type: String, unique: true, sparse: true, default: "" },
+    userName: { type: String, unique: true, sparse: true },
     email: { type: String, default: "" },
     profilePicture: { type: String, default: "" },
     savedJobs: { type: Array, default: [] },
@@ -22,7 +22,6 @@ const userProfileSchema = new mongoose.Schema(
     phone: { type: String, default: "" },
     country: { type: String, default: "" },
     city: { type: String, default: "" },
-    state: { type: String, default: "" },
     address: { type: String, default: "" },
     postal: { type: String, default: "" },
     latitude: { type: Number },
@@ -36,7 +35,6 @@ const userProfileSchema = new mongoose.Schema(
     age: {
       type: String,
       enum: ["18-25", "25-30", "30-35", "35-40"],
-      default: "18-25",
     },
 
     // 🆕 Resume & extra fields
@@ -47,15 +45,14 @@ const userProfileSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ["male", "female", "other"],
-      default: "male",
     },
 
     // 🆕 Expanded Profile Fields
     coverImage: { type: String, default: "" },
-    currentPosition: { type: String, default: "fresh" },
+    currentPosition: { type: String, default: "Fresher" },
     category: { type: String, default: "" },
     description: { type: String, default: "" },
-    dob: { type: Date, default: new Date() },
+    dob: { type: Date },
     language: { type: [String], default: [] },
     qualification: { type: String, default: "" },
     experienceYears: { type: String, default: "" },

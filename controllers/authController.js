@@ -6,6 +6,29 @@ import employeeProfileModel from "../models/employeeProfileModel.js";
 import SibApiV3Sdk from "sib-api-v3-sdk";
 import "dotenv/config";
 
+const generateUniqueUserName = async (email) => {
+  let baseName = (email || "").split("@")[0].replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+
+  if (!baseName || baseName.length < 10) {
+    baseName = baseName.padEnd(10, "x");
+  }
+  if (baseName.length > 15) {
+    baseName = baseName.slice(0, 15);
+  }
+
+  let userName = baseName;
+  let suffix = 0;
+
+  while (suffix < 100) {
+    const nameToTry = suffix === 0 ? userName : userName.slice(0, 10) + String(suffix).padStart(5, "0");
+    const exists = await userProfileModel.findOne({ userName: nameToTry });
+    if (!exists) return nameToTry;
+    suffix++;
+  }
+
+  return userName + Date.now().toString().slice(-5);
+};
+
 // Configure Brevo client once
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
 const apiKey = defaultClient.authentications["api-key"];
@@ -87,12 +110,14 @@ export const register = async (req, res) => {
       const nameParts = name.trim().split(" ");
       const firstName = nameParts[0] || name;
       const lastName = nameParts.slice(1).join(" ") || "";
+      const userName = await generateUniqueUserName(email);
       await userProfileModel.create({
         authId: auth._id,
         role: "user",
         name: firstName,
         lastName,
         email,
+        userName,
       });
     } else {
       await employeeProfileModel.create({

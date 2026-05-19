@@ -24,16 +24,20 @@ import {
 } from "../controllers/authController.js";
 import userAuth from "../middlewares/userAuth.js";
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: {
-    success: false,
-    message: "Too many requests, please try again later",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const isProduction = process.env.NODE_ENV === "production";
+
+const authLimiter = isProduction
+  ? rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 20,
+      message: {
+        success: false,
+        message: "Too many requests, please try again later",
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+    })
+  : (req, res, next) => next();
 
 const authRouter = express.Router();
 

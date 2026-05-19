@@ -7,7 +7,6 @@ const jobsSchema = new mongoose.Schema(
     location: { type: String, required: true },
     address: { type: String, default: "" },
     city: { type: String, default: "" },
-    state: { type: String, default: "" },
     country: { type: String, default: "" },
     zip: { type: String, default: "" },
     latitude: { type: Number },

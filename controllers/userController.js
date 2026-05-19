@@ -145,14 +145,9 @@ function calculateProfileScore(user) {
     score += 3;
   }
 
-  // Resume (4 points)
-  if (user.resume && user.resume.trim() !== "") {
-    score += 4;
-  }
-
-  // Video URL (19 points = ~20%)
+  // Video URL (23 points = ~20%)
   if (user.videoUrl && user.videoUrl.trim() !== "") {
-    score += 19;
+    score += 23;
   }
 
   // ========== LOCATION (10 points) ==========
@@ -222,7 +217,7 @@ function calculateProfileScore(user) {
     score += Math.min(socialCount, 5);
   }
 
-  const maxScore = 110;
+  const maxScore = 112;
   const percentage = Math.min(100, Math.round((score / maxScore) * 100));
 
   return percentage.toFixed(0);
@@ -317,7 +312,10 @@ export const updateProfile = async (req, res) => {
 
       for (const field of requiredFields) {
         const val = updateUser[field.key];
-        if (!val || (typeof val === 'string' && val.trim() === '')) {
+        const oldVal = oldProfile[field.key];
+        const hasNewValue = val !== undefined && !(typeof val === 'string' && val.trim() === '');
+        const hasOldValue = oldVal !== undefined && !(typeof oldVal === 'string' && oldVal.trim() === '');
+        if (!hasNewValue && !hasOldValue) {
           return res.json({
             success: false,
             message: `${field.label} is required`,
@@ -400,27 +398,6 @@ export const updateProfile = async (req, res) => {
       updatedProfile.profileScore = calculateProfileScore(updatedProfile);
       await updatedProfile.save();
     } else {
-      // ---------------- RECRUITER UPDATE ----------------
-
-      const employeeRequiredFields = [
-        { key: 'name', label: 'Name' },
-        { key: 'slug', label: 'Slug' },
-        { key: 'company', label: 'Company Name' },
-        { key: 'category', label: 'Category' },
-        { key: 'country', label: 'Country' },
-        { key: 'city', label: 'City' },
-        { key: 'companyType', label: 'Company Type' },
-      ];
-
-      for (const field of employeeRequiredFields) {
-        const val = updateUser[field.key];
-        if (!val || (typeof val === 'string' && val.trim() === '')) {
-          return res.json({
-            success: false,
-            message: `${field.label} is required`,
-          });
-        }
-      }
 
       updatedProfile = await employeeProfileModel.findOneAndUpdate(
         { authId: userId },
