@@ -376,6 +376,12 @@ export const updateProfile = async (req, res) => {
 
       // ---------------- UPDATE PROFILE ----------------
 
+      ['age', 'gender'].forEach(field => {
+        if (updateUser[field] === '' || updateUser[field] === null || updateUser[field] === undefined) {
+          delete updateUser[field];
+        }
+      });
+
       const setFields = {
         ...updateUser,
         slug: finalSlug,
@@ -394,6 +400,10 @@ export const updateProfile = async (req, res) => {
       if (!updatedProfile) {
         return res.json({ success: false, message: "User Not Found!" });
       }
+
+      ['age', 'gender'].forEach(field => {
+        if (updatedProfile[field] === '') updatedProfile[field] = undefined;
+      });
 
       updatedProfile.profileScore = calculateProfileScore(updatedProfile);
       await updatedProfile.save();
